@@ -121,6 +121,20 @@ namespace IzzyShop.Controllers
             await _context.SaveChangesAsync();
             return Ok(user);
         }
+
+        // Second Order SQL Injection: Uses stored ProfileBio in a dynamic SQL query
+        [HttpGet("search-bio")]
+        public async Task<IActionResult> SearchByBio(string username)
+        {
+            // Step 1: Get the user's bio (could be attacker-controlled)
+            var user = await _context.Users.FirstOrDefaultAsync(u => u.Username == username);
+            if (user == null) return NotFound();
+            var bio = user.ProfileBio;
+            // Step 2: Use the bio in a dynamic SQL query (unsafe)
+            var sql = $"SELECT * FROM Users WHERE ProfileBio = '{bio}'";
+            var users = await _context.Users.FromSqlRaw(sql).ToListAsync();
+            return Ok(users);
+        }
     }
 
     public class LoginRequest
