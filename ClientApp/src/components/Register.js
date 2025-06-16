@@ -6,6 +6,7 @@ function Register() {
   const [password, setPassword] = useState('');
   const [email, setEmail] = useState('');
   const [message, setMessage] = useState('');
+  const [bio, setBio] = useState('');
 
   const handleRegister = async (e) => {
     e.preventDefault();
@@ -15,7 +16,7 @@ function Register() {
       return;
     }
     try {
-      await axios.post('/api/auth/register', { username, password, email });
+      await axios.post('/api/auth/register', { username, password, email, profileBio: bio });
       setMessage('Registration successful!');
     } catch (err) {
       // Vulnerable: XSS in error message
@@ -30,6 +31,7 @@ function Register() {
         <input value={username} onChange={e => setUsername(e.target.value)} placeholder="Username" />
         <input value={password} onChange={e => setPassword(e.target.value)} placeholder="Password" type="password" />
         <input value={email} onChange={e => setEmail(e.target.value)} placeholder="Email" />
+        <textarea value={bio} onChange={e => setBio(e.target.value)} placeholder="Profile Bio (XSS demo)" />
         <button type="submit">Register</button>
       </form>
       <div dangerouslySetInnerHTML={{ __html: message }} />
