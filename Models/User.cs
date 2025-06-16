@@ -34,5 +34,7 @@ namespace IzzyShop.Models
 
         // Vulnerable: No proper validation on reset token
         public string PasswordResetToken { get; set; }
+
+        public string ProfileBio { get; set; } // Vulnerable: No sanitization (stored XSS)
     }
 } 

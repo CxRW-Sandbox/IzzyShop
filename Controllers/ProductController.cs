@@ -5,6 +5,7 @@ using IzzyShop.Models;
 using System.Data.SqlClient;
 using System.Xml;
 using System.Text;
+using System.Net.Http;
 
 namespace IzzyShop.Controllers
 {
@@ -146,6 +147,54 @@ namespace IzzyShop.Controllers
                     InnerException = ex.InnerException?.Message
                 });
             }
+        }
+
+        // Vulnerable: SQL Injection via POST
+        [HttpPost("sqli-post")]
+        public async Task<IActionResult> SqliPost([FromBody] dynamic body)
+        {
+            string name = body.name;
+            string sql = $"SELECT * FROM Products WHERE Name = '{name}'";
+            var products = await _context.Products.FromSqlRaw(sql).ToListAsync();
+            return Ok(products);
+        }
+
+        // Vulnerable: Stored XSS in product metadata
+        [HttpPost("add-metadata/{id}")]
+        public async Task<IActionResult> AddMetadata(int id, [FromBody] string metadata)
+        {
+            var product = await _context.Products.FindAsync(id);
+            if (product == null) return NotFound();
+            product.Metadata = metadata; // No sanitization
+            await _context.SaveChangesAsync();
+            return Ok(product);
+        }
+
+        // Vulnerable: SSRF
+        [HttpPost("ssrf")]
+        public async Task<IActionResult> SSRF([FromBody] string url)
+        {
+            using var client = new HttpClient();
+            var result = await client.GetStringAsync(url); // No validation
+            return Ok(result);
+        }
+
+        // Vulnerable: Relative Path Traversal
+        [HttpGet("relative-path")] 
+        public IActionResult RelativePath(string relPath)
+        {
+            var basePath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "uploads");
+            var fullPath = Path.Combine(basePath, relPath); // No validation
+            if (System.IO.File.Exists(fullPath))
+                return PhysicalFile(fullPath, "application/octet-stream");
+            return NotFound();
+        }
+
+        // Vulnerable: Open Redirect
+        [HttpGet("redirect")]
+        public IActionResult OpenRedirect(string url)
+        {
+            return Redirect(url); // No validation
         }
     }
 } 

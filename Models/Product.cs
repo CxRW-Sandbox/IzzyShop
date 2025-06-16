@@ -1,4 +1,5 @@
 using System.ComponentModel.DataAnnotations;
+using System.Collections.Generic;
 
 namespace IzzyShop.Models
 {
@@ -35,5 +36,7 @@ namespace IzzyShop.Models
 
         // Vulnerable: No proper validation on discount
         public decimal Discount { get; set; }
+
+        public List<Review> Reviews { get; set; }
     }
 } 

@@ -97,6 +97,30 @@ namespace IzzyShop.Controllers
 
             return Ok(new { message = "Password changed successfully" });
         }
+
+        // Vulnerable: JWT with no signature verification
+        [HttpPost("jwt-login")]
+        public IActionResult JwtLogin([FromBody] LoginRequest request)
+        {
+            var user = _context.Users.FirstOrDefault(u => u.Username == request.Username && u.Password == request.Password);
+            if (user == null) return Unauthorized();
+            var header = System.Convert.ToBase64String(System.Text.Encoding.UTF8.GetBytes("{\"alg\":\"none\"}"));
+            var payload = System.Convert.ToBase64String(System.Text.Encoding.UTF8.GetBytes($"{{\"sub\":\"{user.Username}\",\"admin\":{user.IsAdmin.ToString().ToLower()} }}"));
+            var token = $"{header}.{payload}."; // No signature
+            return Ok(new { token });
+        }
+
+        // Vulnerable: Profile with stored XSS
+        [HttpPost("profile")]
+        public async Task<IActionResult> UpdateProfile([FromBody] ProfileRequest req)
+        {
+            var user = await _context.Users.FirstOrDefaultAsync(u => u.Username == req.Username);
+            if (user == null) return NotFound();
+            user.Email = req.Email; // No sanitization
+            user.Address = req.Address; // No sanitization
+            await _context.SaveChangesAsync();
+            return Ok(user);
+        }
     }
 
     public class LoginRequest
@@ -114,5 +138,12 @@ namespace IzzyShop.Controllers
     {
         public string Username { get; set; }
         public string NewPassword { get; set; }
+    }
+
+    public class ProfileRequest
+    {
+        public string Username { get; set; }
+        public string Email { get; set; }
+        public string Address { get; set; }
     }
 } 
