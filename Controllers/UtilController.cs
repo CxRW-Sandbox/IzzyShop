@@ -70,5 +70,20 @@ namespace IzzyShop.Controllers
             var result = dt.Compute(expr, "");
             return Ok(result.ToString());
         }
+
+        // Server-Side Template Injection (SSTI)
+        [HttpPost("ssti")]
+        public IActionResult SSTI([FromBody] TemplateRequest req)
+        {
+            // Vulnerable: Naive template rendering
+            var template = req.Template;
+            var result = template.Replace("{{username}}", req.Username)
+                                 .Replace("{{admin}}", req.IsAdmin.ToString());
+            // Simulate code execution by allowing {{code}} to be replaced with user input
+            result = result.Replace("{{code}}", req.Code);
+            return Ok(result);
+        }
+
+        public class TemplateRequest { public string Template { get; set; } public string Username { get; set; } public bool IsAdmin { get; set; } public string Code { get; set; } }
     }
 } 

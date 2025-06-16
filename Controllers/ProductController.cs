@@ -196,5 +196,31 @@ namespace IzzyShop.Controllers
         {
             return Redirect(url); // No validation
         }
+
+        // Vulnerable: Insecure File Upload
+        [HttpPost("upload")]
+        public async Task<IActionResult> UploadFile()
+        {
+            var file = Request.Form.Files[0];
+            var uploads = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "uploads");
+            Directory.CreateDirectory(uploads);
+            var filePath = Path.Combine(uploads, file.FileName); // No validation
+            using (var stream = new FileStream(filePath, FileMode.Create))
+            {
+                await file.CopyToAsync(stream);
+            }
+            return Ok(new { path = $"/uploads/{file.FileName}" });
+        }
+
+        // Vulnerable: CSRF Demo - Change product price with no anti-CSRF
+        [HttpPost("csrf-price")] 
+        public async Task<IActionResult> CsrfPrice([FromForm] int productId, [FromForm] decimal newPrice)
+        {
+            var product = await _context.Products.FindAsync(productId);
+            if (product == null) return NotFound();
+            product.Price = newPrice;
+            await _context.SaveChangesAsync();
+            return Ok(product);
+        }
     }
 } 

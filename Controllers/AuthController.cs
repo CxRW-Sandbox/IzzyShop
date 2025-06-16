@@ -135,6 +135,25 @@ namespace IzzyShop.Controllers
             var users = await _context.Users.FromSqlRaw(sql).ToListAsync();
             return Ok(users);
         }
+
+        // Insecure Cryptographic Storage: Hardcoded key, weak algorithm
+        [HttpPost("store-secret")]
+        public IActionResult StoreSecret([FromBody] SecretRequest req)
+        {
+            // Hardcoded key, weak algorithm (ECB)
+            var key = Encoding.UTF8.GetBytes("1234567890123456");
+            using var aes = System.Security.Cryptography.Aes.Create();
+            aes.Key = key;
+            aes.Mode = System.Security.Cryptography.CipherMode.ECB;
+            aes.Padding = System.Security.Cryptography.PaddingMode.PKCS7;
+            var encryptor = aes.CreateEncryptor();
+            var plainBytes = Encoding.UTF8.GetBytes(req.Secret);
+            var cipherBytes = encryptor.TransformFinalBlock(plainBytes, 0, plainBytes.Length);
+            var cipherText = Convert.ToBase64String(cipherBytes);
+            // Store in plain text (simulate DB)
+            System.IO.File.AppendAllText("secrets.txt", req.Secret + "\n");
+            return Ok(new { cipherText });
+        }
     }
 
     public class LoginRequest
@@ -160,4 +179,6 @@ namespace IzzyShop.Controllers
         public string Email { get; set; }
         public string Address { get; set; }
     }
+
+    public class SecretRequest { public string Secret { get; set; } }
 } 
